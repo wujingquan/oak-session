@@ -10,6 +10,11 @@ export default class Session {
    * @api private
    */
 
+  private _sessCtx;
+  private _ctx;
+  private isNew;
+  private _requireSave;
+
   constructor(sessionContext, obj) {
     this._sessCtx = sessionContext;
     this._ctx = sessionContext.ctx;

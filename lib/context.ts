@@ -23,6 +23,7 @@ export default class ContextSession {
   private prevHash;
 
   constructor(ctx, opts) {
+    console.log('aaaaaa', ctx)
     this.ctx = ctx;
     this.app = ctx.app;
     this.opts = Object.assign({}, opts);
@@ -85,7 +86,7 @@ export default class ContextSession {
       externalKey = opts.externalKey.get(ctx);
       debug('get external key from custom %s', externalKey);
     } else {
-      externalKey = ctx.cookies.get(opts.key, opts);
+      externalKey = ctx.state.cookies.get(opts.key, opts);
       debug('get external key from cookie %s', externalKey);
     }
 
@@ -118,7 +119,7 @@ export default class ContextSession {
     const ctx = this.ctx;
     const opts = this.opts;
 
-    const cookie = ctx.cookies.get(opts.key, opts);
+    const cookie = ctx.state.cookies.get(opts.key, opts);
     if (!cookie) {
       this.create();
       return;
@@ -137,7 +138,7 @@ export default class ContextSession {
       debug('decode %j error: %s', cookie, err);
       if (!(err instanceof SyntaxError)) {
         // clean this cookie to ensure next request won't throw again
-        ctx.cookies.set(opts.key, '', opts);
+        ctx.state.cookies.set(opts.key, '', opts);
         // ctx.onerror will unset all headers, and set those specified in err
         err.headers = {
           'set-cookie': ctx.response.get('set-cookie'),
@@ -197,9 +198,12 @@ export default class ContextSession {
    * @api private
    */
   emit(event, data) {
-    setImmediate(() => {
+    // setImmediate(() => {
+    //   this.app.emit(`session:${event}`, data);
+    // });
+    setTimeout(() => {
       this.app.emit(`session:${event}`, data);
-    });
+    }, 0);
   }
 
   /**
@@ -294,7 +298,7 @@ export default class ContextSession {
     const externalKey = this.externalKey;
 
     if (externalKey) await this.store.destroy(externalKey);
-    ctx.cookies.set(key, '', opts);
+    ctx.state.cookies.set(key, '', opts);
   }
 
   /**
@@ -334,7 +338,7 @@ export default class ContextSession {
       if (opts.externalKey) {
         opts.externalKey.set(this.ctx, externalKey);
       } else {
-        this.ctx.cookies.set(key, externalKey, opts);
+        this.ctx.state.cookies.set(key, externalKey, opts);
       }
       return;
     }
@@ -344,6 +348,6 @@ export default class ContextSession {
     json = opts.encode(json);
     debug('save %s', json);
 
-    this.ctx.cookies.set(key, json, opts);
+    this.ctx.state.cookies.set(key, json, opts);
   }
 }

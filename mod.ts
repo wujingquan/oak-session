@@ -1,9 +1,18 @@
 // const debug = require('debug')('koa-session');
+import _debug from "https://deno.land/x/debuglog/debug.ts";
+const debug = _debug('koa-session:context');
+
 import ContextSession from './lib/context.ts';
 import util from './lib/util.ts';
+
 // const assert = require('assert');
-import uuid from 'https://deno.land/std@v0.27.0/uuid/v4.ts';
+import { assert } from "https://deno.land/std/testing/asserts.ts";
+
 // const is = require('is-type-of');
+import { isClass } from './is-class.ts'
+
+
+import uuid from 'https://deno.land/std@v0.27.0/uuid/v4.ts';
 
 const CONTEXT_SESSION = Symbol('context#contextSession');
 const _CONTEXT_SESSION = Symbol('context#_contextSession');
@@ -20,20 +29,24 @@ const _CONTEXT_SESSION = Symbol('context#_contextSession');
  */
 
 export default function(opts, app) {
+  console.log(app)
   // session(app[, opts])
   if (opts && typeof opts.use === 'function') {
     [ app, opts ] = [ opts, app ];
+    console.log(`----------debug 1 ---------------------`)
   }
   // app required
   if (!app || typeof app.use !== 'function') {
     throw new TypeError('app instance required: `session(opts, app)`');
+    console.log(`----------debug 1 ---------------------`)
   }
+  console.log(`----------debug 1 ---------------------`, app)
 
   opts = formatOpts(opts);
-  extendContext(app.context, opts);
+  extendState(app.state, opts);
 
   return async function session(ctx, next) {
-    const sess = ctx[CONTEXT_SESSION];
+    const sess = ctx.state[CONTEXT_SESSION];
     if (sess.store) await sess.initFromExternal();
     try {
       await next();
@@ -81,23 +94,26 @@ function formatOpts(opts) {
 
   const store = opts.store;
   if (store) {
-    assert(is.function(store.get), 'store.get must be function');
-    assert(is.function(store.set), 'store.set must be function');
-    assert(is.function(store.destroy), 'store.destroy must be function');
+    // assert(typeof store.get), 'store.get must be function');
+    // assert(typeof store.set), 'store.set must be function');
+    // assert(typeof store.destroy), 'store.destroy must be function');
+    assert(typeof store.get === 'function', 'store.get must be function');
+    assert(typeof store.set === 'function', 'store.set must be function');
+    assert(typeof store.destroy === 'function', 'store.destroy must be function');
   }
 
   const externalKey = opts.externalKey;
   if (externalKey) {
-    assert(is.function(externalKey.get), 'externalKey.get must be function');
-    assert(is.function(externalKey.set), 'externalKey.set must be function');
+    assert(typeof externalKey.get === 'function', 'externalKey.get must be function');
+    assert(typeof externalKey.set === 'function', 'externalKey.set must be function');
   }
 
   const ContextStore = opts.ContextStore;
   if (ContextStore) {
-    assert(is.class(ContextStore), 'ContextStore must be a class');
-    assert(is.function(ContextStore.prototype.get), 'ContextStore.prototype.get must be function');
-    assert(is.function(ContextStore.prototype.set), 'ContextStore.prototype.set must be function');
-    assert(is.function(ContextStore.prototype.destroy), 'ContextStore.prototype.destroy must be function');
+    assert(isClass(ContextStore), 'ContextStore must be a class');
+    assert(typeof ContextStore.prototype.get === 'function', 'ContextStore.prototype.get must be function');
+    assert(typeof ContextStore.prototype.set === 'function', 'ContextStore.prototype.set must be function');
+    assert(typeof ContextStore.prototype.destroy === 'function', 'ContextStore.prototype.destroy must be function');
   }
 
   if (!opts.genid) {
@@ -117,11 +133,11 @@ function formatOpts(opts) {
  * @api private
  */
 
-function extendContext(context, opts) {
-  if (context.hasOwnProperty(CONTEXT_SESSION)) {
+function extendState(state, opts) {
+  if (state.hasOwnProperty(CONTEXT_SESSION)) {
     return;
   }
-  Object.defineProperties(context, {
+  Object.defineProperties(state, {
     [CONTEXT_SESSION]: {
       get() {
         if (this[_CONTEXT_SESSION]) return this[_CONTEXT_SESSION];

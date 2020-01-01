@@ -12,7 +12,8 @@ export default {
    */
 
   decode(string) {
-    const body = Buffer.from(string, 'base64').toString('utf8');
+    // const body = Buffer.from(string, 'base64').toString('utf8');
+    const body = new Deno.Buffer(string).toString();
     const json = JSON.parse(body);
     return json;
   },
@@ -27,7 +28,8 @@ export default {
 
   encode(body) {
     body = JSON.stringify(body);
-    return Buffer.from(body).toString('base64');
+    return new Deno.Buffer(body).toString();
+    // return Buffer.from(body).toString('base64');
   },
 
   hash(sess) {

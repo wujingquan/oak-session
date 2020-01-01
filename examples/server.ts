@@ -10,9 +10,11 @@ import {
   bold,
   yellow
 } from "https://deno.land/std@v0.25.0/fmt/colors.ts";
-import { Application } from "https://deno.land/x/oak/mod.ts";
+// import { Application } from "https://deno.land/x/oak/mod.ts";
+import { Application } from '../oak/mod.ts'
 
 import session from '../mod.ts';
+import cookie from '../oak-cookie/mod.ts';
 
 const app = new Application();
 
@@ -35,14 +37,30 @@ const CONFIG = {
 app.use(session(CONFIG, app));
 // or if you prefer all default config, just use => app.use(session(app));
 
-app.use(ctx => {
+app.use(cookie)
+app.use(async (ctx, next) => {
   // ignore favicon
   if (ctx.request.path === '/favicon.ico') return;
-
-  // let n = ctx.session.views || 0;
-  // ctx.session.views = ++n;
-  // ctx.body = n + ' views';
+  await next()
+  let n = ctx.state.session.views || 0;
+  ctx.state.session.views = ++n;
+  ctx.response.body = n + ' views';
 });
+app.use(ctx => {
+  if (ctx.request.path === '/favicon.ico') return;
+  ctx.response.body = '123'
+})
+// function mi() {
+//   return async function(ctx, next) {
+//     ctx.state.session = 'session'
+//     await next()
+//   }
+// }
+// app.use(mi())
+// app.use(async (ctx, next) => {
+//   console.log(ctx.state.session)
+//   ctx.response.body = '123'
+// })
 
 const address = "127.0.0.1:8000";
 console.log(bold("Start listening on ") + yellow(address));
